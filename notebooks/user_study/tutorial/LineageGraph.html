@@ -1,0 +1,80 @@
+<html>
+<head>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@latest/styles/vis-network.css" type="text/css" />
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vis-network@latest/dist/vis-network.min.js"> </script>
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+
+<style type="text/css">
+
+        #mynetwork {
+            width: 100%;
+            height: 100%;
+            background-color: #222222;
+            border: 1px solid lightgray;
+            position: relative;
+            float: left;
+        }
+
+        
+
+        
+
+        
+</style>
+
+</head>
+
+<body>
+<div id = "mynetwork"></div>
+
+
+<script type="text/javascript">
+
+    // initialize global variables.
+    var edges;
+    var nodes;
+    var network; 
+    var container;
+    var options, data;
+
+    
+    // This method is responsible for drawing the graph, returns the drawn network
+    function drawGraph() {
+        var container = document.getElementById('mynetwork');
+        
+        
+
+        // parsing and collecting nodes and edges from the python
+        nodes = new vis.DataSet([{"font": {"color": "white"}, "id": "root", "label": "root", "level": 0, "shape": "dot", "size": 10}, {"font": {"color": "white"}, "id": "models/bert-base-uncased", "label": "models/bert-base-uncased", "level": 1, "shape": "dot", "size": 10}, {"font": {"color": "white"}, "id": "models/bert-base-uncased_v2", "label": "models/bert-base-uncased_v2", "level": 2, "shape": "dot", "size": 10}, {"font": {"color": "white"}, "id": "models/bert-base-uncased-sentiment", "label": "models/bert-base-uncased-sentiment", "level": 2, "shape": "dot", "size": 10}]);
+        edges = new vis.DataSet([{"arrows": "to", "from": "root", "label": 1, "title": "models/bert-base-uncased becomes the root, as it is the first inserted node.", "to": "models/bert-base-uncased", "weight": 1}, {"arrows": "to", "from": "models/bert-base-uncased", "label": 1, "title": "WARNING: models/bert-base-uncased_v2 is specified to be adapted from models/bert-base-uncased without checking", "to": "models/bert-base-uncased_v2", "weight": 1}, {"arrows": "to", "from": "models/bert-base-uncased", "label": 1, "title": "WARNING: models/bert-base-uncased-sentiment is specified to be adapted from models/bert-base-uncased without checking", "to": "models/bert-base-uncased-sentiment", "weight": 1}]);
+
+        // adding nodes and edges to the graph
+        data = {nodes: nodes, edges: edges};
+
+        var options = {"layout": {"hierarchical": {"enabled": true, "direction": "UD", "sortMethod": "directed"}}, "physics": {"enabled": false}};
+        
+        
+
+        
+
+        network = new vis.Network(container, data, options);
+	 
+        
+
+
+        
+
+        return network;
+
+    }
+
+    drawGraph();
+
+</script>
+</body>
+</html>

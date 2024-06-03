@@ -1,0 +1,1 @@
+python collocation.py --models /workspace/llms/meta-llama/Llama-2-7b-hf/ /workspace/llms/meta-llama/Llama-2-7b-chat-hf/ --mode sequence --profile_mode performance | tee ./log/llama2_llama2chat_0_perf.log

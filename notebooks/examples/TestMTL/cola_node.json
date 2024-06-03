@@ -1,0 +1,5 @@
+{
+    "output_dir":"tmp_MTL_cola",
+    "lineage_train_path":"./cola_lineage_train.json",
+    "base_modules":["robertaembeddings", "robertalayer"]
+}

@@ -1,0 +1,4 @@
+python collocation.py --models /workspace/llms/meta-llama/Llama-2-7b-hf/ /workspace/llms/meta-llama/Llama-2-7b-chat-hf/ --mode sequence --profile_mode latency --seq_len 32 --max_new_tokens 1| tee ./log/llama2_llama2chat_0_32_latency.log
+python collocation.py --models /workspace/llms/meta-llama/Llama-2-7b-hf/ /workspace/llms/meta-llama/Llama-2-7b-chat-hf/ --mode sequence --profile_mode latency --seq_len 64 --max_new_tokens 1| tee ./log/llama2_llama2chat_0_64_latency.log
+python collocation.py --models /workspace/llms/meta-llama/Llama-2-7b-hf/ /workspace/llms/meta-llama/Llama-2-7b-chat-hf/ --mode sequence --profile_mode latency --seq_len 128 --max_new_tokens 1| tee ./log/llama2_llama2chat_0_128_latency.log
+python collocation.py --models /workspace/llms/meta-llama/Llama-2-7b-hf/ /workspace/llms/meta-llama/Llama-2-7b-chat-hf/ --mode sequence --profile_mode latency --seq_len 256 --max_new_tokens 1| tee ./log/llama2_llama2chat_0_256_latency.log

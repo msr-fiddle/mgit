@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+
+from utils.lcs.diffcheck import diff_lcs
+from utils.ht.diffcheck import diff_ht
+from utils.model_utils import load_models
+from utils.lineage.graph import *
+from utils import meta_functions
+
+
+def mgit_diff(
+    checkpoint1_filepath,
+    checkpoint2_filepath,
+    save_path=None,
+    mode=None,
+    method="HT",
+    coarse=False,
+):
+    if mode is None:
+        mode = "contextual"
+
+    if save_path is None:
+        save_path = "output/example.html"
+
+    loaded_models, tracing_module_pool = load_models(
+        [checkpoint1_filepath, checkpoint2_filepath], coarse
+    )
+
+    if method == "HT":
+        return diff_ht(
+            loaded_models, save_path, mode, coarse, list(tracing_module_pool)
+        )
+    else:
+        return diff_lcs(loaded_models)
+
+
+def mgit_init(args):
+    graph_path = args.graph_dir
+    assert os.path.exists(graph_path)
+    g = LineageGraph()
+    g.show(save_path=os.path.join(graph_path, "LineageGraph.html"))
+    g.save(graph_path)
+
+
+def mgit_add(args):
+    graph_path = args.graph_dir
+    node_config_path = args.node_config
+    parent = args.parent
+    etype = args.e
+    inplace = args.i
+
+    g = LineageGraph.load_from_file(graph_path)
+
+    node = LineageNode.load_from_file(node_config_path)
+    g.add(
+        node=node, etype=etype, parent=parent, inplace=inplace
+    )  # , test_name_list=args.t)
+    g.show(etype=etype, save_path=os.path.join(graph_path, "LineageGraph.html"))
+    g.save(graph_path)
+
+
+def mgit_downward_train(args):
+    graph_path = args.graph_dir
+    node_name_list = args.n
+
+    g = LineageGraph.load_from_file(graph_path)
+
+    meta_functions.downward_MTL(g, node_name_list)
+    g.save(graph_path)
+
+
+def mgit_test(args):
+    graph_path = args.graph_dir
+    node_names = args.n
+    test_names = args.t
+    test_config_paths = args.test_config
+    model_types = args.m_type
+    execute_test = args.exe
+
+    g = LineageGraph.load_from_file(graph_path)
+
+    if node_names is None:
+        node_names = []
+        for m_type in model_types:
+            node_names = node_names + g.model_type_to_nodes[m_type]
+
+    if test_config_paths is not None:
+        test_names = []
+        for test_config_path in test_config_paths:
+            for node_name in node_names:
+                test = LineageTest.load_from_file(test_config_path)
+                g.nodes[node_name].add_test(test)
+                test_names.append(test.name)
+
+    if execute_test:
+        for node_name in node_names:
+            for test_name in test_names:
+                if test_name in g.nodes[node_name].test_dict:
+                    g.nodes[node_name].run_test_from_name(test_name)
+
+    g.save(graph_path, save_models=False)
+
+
+def mgit_display_test(args):
+    graph_path = args.graph_dir
+    node_name_list = args.n
+    test_name_list = args.t
+    show_metrics = args.metrics
+
+    g = LineageGraph.load_from_file(graph_path)
+
+    meta_functions.show_result_table(
+        g,
+        node_name_list=node_name_list,
+        test_name_list=test_name_list,
+        show_metrics=show_metrics,
+    )
+    g.save(graph_path, save_models=False)
+
+
+def add_diff_parser(subparsers):
+    parser_diff = subparsers.add_parser("diff", help="computes diff between two models")
+
+    parser_diff.add_argument(
+        "-c",
+        action="store_true",
+        help="Specify the granularity of traced layers",
+    )
+
+    parser_diff.add_argument(
+        "-s",
+        action="store_const",
+        const="structural",
+        help="Use structural mode for the diff if specified, default mode is contextual diff",
+    )
+
+    parser_diff.add_argument(
+        "-o", help="Specify the output file path for the generated graph"
+    )
+
+    parser_diff.add_argument(
+        "-lcs",
+        action="store_true",
+        help="Use lcs algorithm to compute diff if specified",
+    )
+
+    # parser_diff.add_argument('-t', '--list', nargs='+', help='Specify test_name_list for add', required=False)
+
+    parser_diff.add_argument(
+        "arguments", type=str, nargs="+", help="Arguments to mgit command"
+    )
+
+
+def add_add_parser(subparsers):
+    parser_add = subparsers.add_parser("add", help="add node to graph")
+    parser_add.add_argument(
+        "-node_config",
+        type=str,
+        required=True,
+        help="Configuration file for node to add",
+    )
+    parser_add.add_argument(
+        "-graph_dir", type=str, default="./", help="graph directory"
+    )
+    parser_add.add_argument(
+        "-e",
+        type=str,
+        choices=["versioned", "adapted", "share_weight"],
+        help="Specify edge type",
+    )
+
+    parser_add.add_argument(
+        "-i", action="store_true", help="Specify if is an inplace update"
+    )
+
+    parser_add.add_argument("-parent", type=str, help="Specify parent of node")
+
+
+def add_init_parser(subparsers):
+    parser_init = subparsers.add_parser("init", help="initialize graph")
+    parser_init.add_argument(
+        "-graph_dir", type=str, default="./", help="graph directory"
+    )
+
+
+def add_downward_train_parser(subparsers):
+    parser_downward = subparsers.add_parser(
+        "downward_train", help="train node and its children"
+    )
+    parser_downward.add_argument(
+        "-graph_dir", type=str, default="./", help="graph directory"
+    )
+    parser_downward.add_argument(
+        "-n", type=str, nargs="+", required=True, help="node list to train"
+    )
+
+
+def add_test_parser(subparsers):
+    parser_test = subparsers.add_parser("test", help="add or run test on a node")
+    parser_test.add_argument(
+        "-graph_dir", type=str, default="./", help="graph directory"
+    )
+    parser_test.add_argument("-n", nargs="+", type=str, help="node to test")
+    test_group = parser_test.add_mutually_exclusive_group(required=True)
+    test_group.add_argument(
+        "-t", nargs="+", type=str, help="Specifies name of test to run"
+    )
+    test_group.add_argument(
+        "-test_config",
+        nargs="+",
+        type=str,
+        help="Specifies configuration file of test to run",
+    )
+    parser_test.add_argument("-m_type", nargs="+", type=str, help="model type")
+    parser_test.add_argument("-exe", action="store_true", help="If set, execute test")
+
+
+def add_display_test_parser(subparsers):
+    parser_display_test = subparsers.add_parser(
+        "display_test", help="display test results in table"
+    )
+    parser_display_test.add_argument(
+        "-graph_dir", type=str, default="./", help="graph directory"
+    )
+    parser_display_test.add_argument("-n", nargs="+", type=str, help="node to test")
+    parser_display_test.add_argument("-t", nargs="+", type=str, help="test to run")
+    parser_display_test.add_argument(
+        "-metrics", action="store_true", help="If set, table shows test metrics"
+    )
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Git for Machine Learning Models.")
+    subparsers = parser.add_subparsers(dest="cmd_name", help="sub-command help")
+    subparsers.required = True
+    add_init_parser(subparsers)
+    add_diff_parser(subparsers)
+    add_add_parser(subparsers)
+    add_downward_train_parser(subparsers)
+    add_test_parser(subparsers)
+    add_display_test_parser(subparsers)
+
+    args = parser.parse_args()
+
+    if args.cmd_name == "diff":
+        arguments = args.arguments
+        assert len(arguments) <= 3, "2 arguments needed for mgit diff"
+        if args.lcs:
+            method = "LCS"
+        else:
+            method = "HT"
+
+        [checkpoint1_filepath, checkpoint2_filepath] = arguments
+        mgit_diff(
+            checkpoint1_filepath,
+            checkpoint2_filepath,
+            save_path=args.o,
+            mode=args.s,
+            method=method,
+            coarse=args.c,
+        )
+    elif args.cmd_name == "add":
+        mgit_add(args)
+    elif args.cmd_name == "downward_train":
+        mgit_downward_train(args)
+    elif args.cmd_name == "test":
+        mgit_test(args)
+    elif args.cmd_name == "display_test":
+        mgit_display_test(args)
+    elif args.cmd_name == "init":
+        mgit_init(args)

@@ -1,0 +1,14 @@
+{
+ "preprocess_function_path": "/mnt1/dmendoza/mgit/utils/preprocess_utils.py",
+ "preprocess_function_name": "glue_preprocess_function",
+ "train_dataset_path": "/mnt1/dmendoza/mgit/notebooks/TestMTL/cola_train_dataset.json",
+ "eval_dataset_path": "/mnt1/dmendoza/mgit/notebooks/TestMTL/cola_eval_dataset.json",
+ "learning_rate": 2e-05,
+ "per_device_train_batch_size": 16,
+ "per_device_eval_batch_size": 16,
+ "num_train_epochs": 1,
+ "weight_decay": 0.01,
+ "metric_for_best_model": "matthews_correlation",
+ "compute_metrics_path": "/mnt1/dmendoza/mgit/notebooks/TestMTL/user_functions.py",
+ "compute_metrics_name": "cola_compute_metrics"
+}
