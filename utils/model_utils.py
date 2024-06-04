@@ -19,12 +19,10 @@ from transformers import (
 )
 
 __all__ = [
-    "TRANSFORMERS_CACHE",
     "load_tokenizers",
     "load_models",
     "task_to_keys",
 ]
-TRANSFORMERS_CACHE = '/workspace/HF_cache/transformers_cache/'"
 task_to_keys = {
     "cola": ("sentence", None),
     "mnli": ("premise", "hypothesis"),
@@ -61,7 +59,7 @@ def smart_embedding_resize(
 
 def create_sc_model(mdckpt, num_labels, adapter=True, adapter_config=None):
     model = AutoModelForSequenceClassification.from_pretrained(
-        mdckpt, num_labels=num_labels, cache_dir=TRANSFORMERS_CACHE, low_cpu_mem_usage=True
+        mdckpt, num_labels=num_labels, low_cpu_mem_usage=True
     )
     if adapter and not hasattr(model.config, "adapter_size"):
         if adapter_config is None:
@@ -80,7 +78,7 @@ def load_tokenizers(checkpoint_filepaths):
     loaded_tokenizers = []
     for checkpoint_filepath in checkpoint_filepaths:
         tokenizer = AutoTokenizer.from_pretrained(
-            checkpoint_filepath, use_fast=True, cache_dir=TRANSFORMERS_CACHE
+            checkpoint_filepath, use_fast=True
         )
         loaded_tokenizers.append(tokenizer)
     return loaded_tokenizers
@@ -193,7 +191,7 @@ def train_MLM(
     ), "currently only support wikitext dataset for mlm training"
     feature_names = ["text"]
 
-    dataset = load_dataset(ds, task, cache_dir=TRANSFORMERS_CACHE)
+    dataset = load_dataset(ds, task)
     num_samples = int(len(dataset["train"]) * sample_frac)
     np.random.seed(0)
     random_select_idx = np.random.choice(
@@ -212,7 +210,6 @@ def train_MLM(
 
     model = transformers.AutoModelForMaskedLM.from_pretrained(
         mdckpt,
-        cache_dir=TRANSFORMERS_CACHE,
         low_cpu_mem_usage=True
     )
 
@@ -305,10 +302,10 @@ def train_sequence_classification(
     else:
         feature_names = [sentence1_key, sentence2_key]
 
-    dataset = load_dataset(ds, actual_task, cache_dir=TRANSFORMERS_CACHE)
+    dataset = load_dataset(ds, actual_task)
     dataset = augment_dataset(dataset, feature_names, perturbations)
 
-    metric = load_metric(ds, actual_task, cache_dir=TRANSFORMERS_CACHE)
+    metric = load_metric(ds, actual_task)
     tokenizers = load_tokenizers([mdckpt])
     tokenizer = tokenizers[0]
     num_labels = 3 if task.startswith("mnli") else 1 if task == "stsb" else 2

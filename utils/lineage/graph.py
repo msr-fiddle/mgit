@@ -372,10 +372,7 @@ class LineageTrain:
         elif self.num_train_epochs == 0:
             return True
         else:
-            train_loader = self.get_train_dataloader()
-            return self.step_counter >= self.num_train_epochs * len(
-                train_loader
-            )
+            return self.step_counter >= self.num_train_epochs * self.get_steps_per_epoch()
 
     def increment_step(self, num_steps=1):
         self.step_counter += num_steps
@@ -432,6 +429,30 @@ class LineageTrain:
                     tokenizer=tokenizer, mlm_probability=0.15
                 )
 
+    def get_steps_per_epoch(self):
+        if self.trainer is not None:
+            return len(self.trainer.get_train_dataloader())
+        else:
+            args = transformers.TrainingArguments(
+                output_dir="tmp_trainer_args",
+                **dict(
+                    (k, self.__dict__[k])
+                    for k in self.allowed_training_args
+                    if self.__dict__[k] is not None
+                ),
+            )
+            trainer = transformers.Trainer(
+                model=torch.nn.Identity(),
+                args=args,
+                train_dataset=self.train_dataset.get_dataset(),
+                **dict(
+                    (k, self.__dict__[k])
+                    for k in self.allowed_trainer_args
+                    if self.__dict__[k] is not None
+                ),
+            )
+            return len(trainer.get_train_dataloader())
+            
     def get_trainer(self, re_initialize=False):
         if self.trainer is not None and re_initialize is False:
             return self.trainer
@@ -1207,7 +1228,7 @@ class LineageModel:
         if self.node == None or self.node.graph == None:
             print("WARNING: model has to be loaded into graph to save custom_state_dict!")
             return
-
+        
         if self.node.graph.single_model_compression:
             is_compressible, compressed, decompressed = self.is_compressible(
                 accuracy_threshold, compression_ratio_threshold
