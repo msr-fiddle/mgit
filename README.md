@@ -1,7 +1,7 @@
 # MGit: A Model Versioning and Management System
 
 This repository contains the source code implementation of "[MGit: A Model Versioning and Management System](https://arxiv.org/abs/2307.07507)" (to appear at ICML 2024).
-This source code is available under the [MIT License](LICENSE.txt).
+This source code is available under the [MIT License](LICENSE).
 
 More documentation coming soon!
 
@@ -117,4 +117,4 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 
 Copyright (c) Microsoft Corporation. All rights reserved.
 
-Licensed under the [MIT](LICENSE.txt) license.
+Licensed under the [MIT](LICENSE) license.
